@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'relawan_detail_screen.dart';
-import 'notifikasi_screen.dart';
+import '../features/relawan_detail_screen.dart';
+import '../features/notifikasi_screen.dart';
 
 class HomeTab extends StatelessWidget {
   final String role;

@@ -1,9 +1,49 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
-import 'dashboard_screen.dart';
+import '../main_layout/dashboard_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Dummy user data
+  final Map<String, String> _dummyUsers = {
+    'siswa@test.com': 'siswa',
+    'relawan@test.com': 'relawan',
+  };
+
+  void _login() {
+    final email = _emailController.text.trim();
+    
+    if (_dummyUsers.containsKey(email)) {
+      final role = _dummyUsers[email]!;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => DashboardScreen(role: role)),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email tidak ditemukan! Gunakan siswa@test.com atau relawan@test.com'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,17 +75,20 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 48),
               TextField(
+                controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
+                  hintText: 'siswa@test.com / relawan@test.com',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
+                controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: 'Password (bebas)',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: const Icon(Icons.visibility_off),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -59,35 +102,14 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DashboardScreen(role: 'siswa')),
-                  );
-                },
+                onPressed: _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Masuk sebagai Siswa', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DashboardScreen(role: 'relawan')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text('Masuk sebagai Relawan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 24),
               Row(

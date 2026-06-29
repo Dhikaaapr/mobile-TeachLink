@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'relawan_detail_screen.dart';
-import 'permintaan_detail_screen.dart';
+import '../features/relawan_detail_screen.dart';
+import '../features/permintaan_detail_screen.dart';
 
 class SearchTab extends StatelessWidget {
   final String role;
