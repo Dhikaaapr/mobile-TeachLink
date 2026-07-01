@@ -13,7 +13,10 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
   String? _selectedHari;
   final _catatanController = TextEditingController();
 
-  final List<String> _mapelList = ['Matematika', 'IPA / Sains', 'Bahasa Inggris', 'Bahasa Indonesia', 'Fisika', 'Kimia', 'Sejarah', 'Pemrograman'];
+  final List<String> _mapelList = [
+    'Matematika', 'IPA / Sains', 'Bahasa Inggris', 'Bahasa Indonesia',
+    'Fisika', 'Kimia', 'Sejarah', 'Pemrograman'
+  ];
   final List<String> _hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
   @override
@@ -25,7 +28,10 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
   void _kirimPermintaan() {
     if (_selectedMapel == null || _selectedHari == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Harap pilih mata pelajaran dan hari terlebih dahulu'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Harap pilih mata pelajaran dan hari terlebih dahulu'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -39,7 +45,8 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 64),
             const SizedBox(height: 16),
-            const Text('Permintaan Terkirim!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Permintaan Terkirim!',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               'Permintaan belajar Anda kepada ${widget.relawan['nama']} telah dikirim. Tunggu konfirmasi dari relawan.',
@@ -107,25 +114,33 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.relawan['nama'], style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(widget.relawan['nama'],
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 2),
-                        Text(widget.relawan['keahlian'], style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        Text(widget.relawan['keahlian'],
+                            style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 2),
                         Row(children: [
                           const Icon(Icons.location_on, size: 12, color: Colors.white70),
                           const SizedBox(width: 4),
-                          Text(widget.relawan['lokasi'], style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text(widget.relawan['lokasi'],
+                              style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         ]),
                       ],
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20)),
                     child: Row(children: [
                       const Icon(Icons.star, size: 14, color: Colors.amber),
                       const SizedBox(width: 4),
-                      Text(widget.relawan['rating'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Text(widget.relawan['rating'],
+                          style:
+                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ]),
                   ),
                 ],
@@ -133,7 +148,6 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Form
             const Text('Detail Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
@@ -147,7 +161,9 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                 filled: true,
                 fillColor: Colors.white,
               ),
-              items: _mapelList.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+              items: _mapelList
+                  .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                  .toList(),
               onChanged: (val) => setState(() => _selectedMapel = val),
             ),
             const SizedBox(height: 16),
@@ -162,7 +178,9 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                 filled: true,
                 fillColor: Colors.white,
               ),
-              items: _hariList.map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
+              items: _hariList
+                  .map((h) => DropdownMenuItem(value: h, child: Text(h)))
+                  .toList(),
               onChanged: (val) => setState(() => _selectedHari = val),
             ),
             const SizedBox(height: 16),
@@ -186,7 +204,8 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
             ElevatedButton.icon(
               onPressed: _kirimPermintaan,
               icon: const Icon(Icons.send),
-              label: const Text('Kirim Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              label: const Text('Kirim Permintaan',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,

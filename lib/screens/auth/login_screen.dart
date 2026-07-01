@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
-import '../main_layout/dashboard_screen.dart';
+import '../siswa/dashboard_siswa.dart';
+import '../relawan/dashboard_relawan.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,7 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final role = _dummyUsers[email]!;
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => DashboardScreen(role: role)),
+        MaterialPageRoute(
+          builder: (context) => role == 'siswa'
+              ? const DashboardSiswa()
+              : const DashboardRelawan(),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

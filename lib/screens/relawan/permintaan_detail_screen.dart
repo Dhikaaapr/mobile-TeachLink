@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Dummy data permintaan untuk relawan
+// Dummy data permintaan masuk untuk relawan
 final List<Map<String, dynamic>> dummyPermintaan = [
   {
     'nama': 'Budi Santoso',
@@ -140,14 +140,16 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(data['nama'], style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                        Text(data['nama'],
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 2),
                         Text(data['kelas'], style: const TextStyle(color: Colors.black54)),
                         const SizedBox(height: 2),
                         Row(children: [
                           const Icon(Icons.location_on, size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
-                          Text(data['lokasi'], style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                          Text(data['lokasi'],
+                              style: const TextStyle(color: Colors.black54, fontSize: 12)),
                         ]),
                       ],
                     ),
@@ -168,7 +170,8 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Detail Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const Text('Detail Permintaan',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const Divider(height: 24),
                   _buildDetailRow(Icons.menu_book, 'Mata Pelajaran', data['mapel']),
                   const SizedBox(height: 12),
@@ -185,7 +188,8 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
               ElevatedButton.icon(
                 onPressed: () => _ubahStatus('diterima'),
                 icon: const Icon(Icons.check_circle),
-                label: const Text('Terima Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                label: const Text('Terima Permintaan',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -197,7 +201,8 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
               OutlinedButton.icon(
                 onPressed: () => _ubahStatus('ditolak'),
                 icon: const Icon(Icons.cancel),
-                label: const Text('Tolak Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                label: const Text('Tolak Permintaan',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),
