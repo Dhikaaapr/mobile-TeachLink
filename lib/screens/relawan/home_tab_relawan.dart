@@ -1,10 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'notifikasi_relawan_screen.dart';
 
-class HomeTabRelawan extends StatelessWidget {
+class HomeTabRelawan extends StatefulWidget {
   const HomeTabRelawan({super.key});
 
   @override
+  State<HomeTabRelawan> createState() => _HomeTabRelawanState();
+}
+
+class _HomeTabRelawanState extends State<HomeTabRelawan> {
+  String _namaUser = 'Relawan';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists && mounted) {
+        setState(() {
+          _namaUser = doc.get('nama') ?? 'Relawan';
+        });
+      }
+    }
+  }  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -57,9 +82,9 @@ class HomeTabRelawan extends StatelessWidget {
                             'Selamat Datang,',
                             style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
                           ),
-                          const Text(
-                            'Rina Dewi 👋',
-                            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                          Text(
+                            '$_namaUser 👋',
+                            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -99,25 +124,191 @@ class HomeTabRelawan extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Aktivitas Terbaru
-            const Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            ...List.generate(3, (index) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.green[50],
-                    child: const Icon(Icons.volunteer_activism, color: Colors.green),
+            // Sesi Hari Ini
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Sesi Hari Ini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
+              ],
+            ),
+            _buildSesiCard(
+              mapel: 'Matematika',
+              waktu: '14:00 - 15:30',
+              siswa: 'Budi (SMP Kelas 8)',
+              lokasi: 'Online (Zoom)',
+              warnaAksen: Colors.blue,
+            ),
+            _buildSesiCard(
+              mapel: 'Bahasa Inggris',
+              waktu: '16:00 - 17:00',
+              siswa: 'Siti (SD Kelas 5)',
+              lokasi: 'Offline (Perpustakaan Daerah)',
+              warnaAksen: Colors.orange,
+            ),
+            
+            const SizedBox(height: 20),
+
+            // Request Terbaru
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Request Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
+              ],
+            ),
+            _buildRequestCard(
+              namaSiswa: 'Andi (SMA Kelas 10)',
+              mapel: 'Fisika',
+              pesan: 'Mohon bantuannya kak untuk materi Hukum Newton, saya agak kesulitan.',
+            ),
+            _buildRequestCard(
+              namaSiswa: 'Jojo (SMK Kelas 11)',
+              mapel: 'Dasar Pemrograman',
+              pesan: 'Kak, saya butuh bimbingan tentang looping di Python.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSesiCard({
+    required String mapel,
+    required String waktu,
+    required String siswa,
+    required String lokasi,
+    required Color warnaAksen,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: warnaAksen.withOpacity(0.3), width: 1),
+      ),
+      elevation: 0,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: warnaAksen.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.class_, color: warnaAksen),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(mapel, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 14, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Text(waktu, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    ],
                   ),
-                  title: Text('Kegiatan Mengajar #${index + 1}'),
-                  subtitle: const Text('SDN 01 Jakarta • 2 Hari yang lalu'),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onTap: () {},
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 14, color: Colors.black54),
+                      const SizedBox(width: 4),
+                      Text(siswa, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.play_circle_fill, color: Colors.green, size: 32),
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestCard({
+    required String namaSiswa,
+    required String mapel,
+    required String pesan,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.blue[50],
+                  child: const Icon(Icons.person_outline, color: Colors.blue),
                 ),
-              );
-            }),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(namaSiswa, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('Butuh bantuan: $mapel', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('Baru', style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '"$pesan"',
+              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Tolak'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Terima'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),

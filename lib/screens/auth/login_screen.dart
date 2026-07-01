@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
 import '../../services/auth_service.dart';
-import '../siswa/dashboard_siswa.dart';
-import '../relawan/dashboard_relawan.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -84,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  hintText: 'siswa@test.com / relawan@test.com',
+                  hintText: 'Masukkan email Anda',
                   prefixIcon: const Icon(Icons.email_outlined),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -94,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Password (bebas)',
+                  labelText: 'Password',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: const Icon(Icons.visibility_off),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

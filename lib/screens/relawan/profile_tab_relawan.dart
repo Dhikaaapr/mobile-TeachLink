@@ -1,8 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import 'riwayat_mengajar_screen.dart';
 
-class ProfileTabRelawan extends StatelessWidget {
+class ProfileTabRelawan extends StatefulWidget {
   const ProfileTabRelawan({super.key});
+
+  @override
+  State<ProfileTabRelawan> createState() => _ProfileTabRelawanState();
+}
+
+class _ProfileTabRelawanState extends State<ProfileTabRelawan> {
+  String _nama = 'Relawan';
+  String _email = '-';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && mounted) {
+        setState(() {
+          _nama = doc.get('nama') ?? 'Relawan';
+          _email = doc.get('email') ?? user.email ?? '-';
+        });
+      } else if (mounted) {
+        setState(() {
+          _email = user.email ?? '-';
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,15 +61,15 @@ class ProfileTabRelawan extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Rina Dewi',
+            Text(
+              _nama,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            const Text(
-              'relawan@teachlink.com',
+            Text(
+              _email,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54),
+              style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 8),
             Center(
@@ -79,7 +113,9 @@ class ProfileTabRelawan extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildProfileMenu(icon: Icons.edit_outlined, title: 'Edit Profil', onTap: () {}),
-            _buildProfileMenu(icon: Icons.history, title: 'Riwayat Mengajar', onTap: () {}),
+            _buildProfileMenu(icon: Icons.history, title: 'Riwayat Mengajar', onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatMengajarScreen()));
+            }),
             _buildProfileMenu(icon: Icons.settings_outlined, title: 'Pengaturan', onTap: () {}),
             _buildProfileMenu(icon: Icons.help_outline, title: 'Pusat Bantuan', onTap: () {}),
             const SizedBox(height: 24),
