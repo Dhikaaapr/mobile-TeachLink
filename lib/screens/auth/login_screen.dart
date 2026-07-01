@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'register_screen.dart';
+import '../../services/auth_service.dart';
 import '../siswa/dashboard_siswa.dart';
 import '../relawan/dashboard_relawan.dart';
 
@@ -14,32 +15,32 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Dummy user data
-  final Map<String, String> _dummyUsers = {
-    'siswa@test.com': 'siswa',
-    'relawan@test.com': 'relawan',
-  };
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-  void _login() {
+  void _login() async {
     final email = _emailController.text.trim();
-    
-    if (_dummyUsers.containsKey(email)) {
-      final role = _dummyUsers[email]!;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => role == 'siswa'
-              ? const DashboardSiswa()
-              : const DashboardRelawan(),
-        ),
-      );
-    } else {
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email tidak ditemukan! Gunakan siswa@test.com atau relawan@test.com'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Email dan Password harus diisi!'), backgroundColor: Colors.orange),
       );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final error = await _authService.login(email, password);
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      }
+      // if successful, StreamBuilder in main.dart will automatically redirect
     }
   }
 
@@ -107,14 +108,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: _login,
+                onPressed: _isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: _isLoading 
+                    ? const CircularProgressIndicator(color: Colors.white) 
+                    : const Text('Masuk', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 24),
               Row(

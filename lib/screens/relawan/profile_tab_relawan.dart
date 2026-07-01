@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../auth/login_screen.dart';
+import '../../services/auth_service.dart';
 
 class ProfileTabRelawan extends StatelessWidget {
   const ProfileTabRelawan({super.key});
@@ -84,11 +84,9 @@ class ProfileTabRelawan extends StatelessWidget {
             _buildProfileMenu(icon: Icons.help_outline, title: 'Pusat Bantuan', onTap: () {}),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
+              onPressed: () async {
+                await AuthService().logout();
+                // We don't need Navigator because StreamBuilder in main.dart handles it
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[50],

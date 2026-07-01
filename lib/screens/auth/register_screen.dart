@@ -1,7 +1,60 @@
 import 'package:flutter/material.dart';
+import '../../services/auth_service.dart';
 
-class RegisterScreen extends StatelessWidget {
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _selectedRole = 'siswa';
+  
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _register() async {
+    final nama = _namaController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (nama.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field harus diisi!'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final error = await _authService.register(nama, email, password, _selectedRole);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registrasi Berhasil! Silakan login.'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Go back to login
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +82,7 @@ class RegisterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             TextField(
+              controller: _namaController,
               decoration: InputDecoration(
                 labelText: 'Nama Lengkap',
                 prefixIcon: const Icon(Icons.person_outline),
@@ -37,6 +91,7 @@ class RegisterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _emailController,
               decoration: InputDecoration(
                 labelText: 'Email',
                 prefixIcon: const Icon(Icons.email_outlined),
@@ -45,6 +100,7 @@ class RegisterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: 'Password',
@@ -55,6 +111,7 @@ class RegisterScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
+              value: _selectedRole,
               decoration: InputDecoration(
                 labelText: 'Peran',
                 prefixIcon: const Icon(Icons.work_outline),
@@ -64,20 +121,24 @@ class RegisterScreen extends StatelessWidget {
                 DropdownMenuItem(value: 'siswa', child: Text('Siswa')),
                 DropdownMenuItem(value: 'relawan', child: Text('Relawan')),
               ],
-              onChanged: (value) {},
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedRole = value);
+                }
+              },
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Go back to login
-              },
+              onPressed: _isLoading ? null : _register,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Daftar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Daftar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
