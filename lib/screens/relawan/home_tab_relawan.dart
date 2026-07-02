@@ -71,7 +71,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: Colors.white.withOpacity(0.3),
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
                         child: const Icon(Icons.person, color: Colors.white, size: 24),
                       ),
                       const SizedBox(width: 12),
@@ -80,7 +80,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
                         children: [
                           Text(
                             'Selamat Datang,',
-                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                           ),
                           Text(
                             '$_namaUser 👋',
@@ -93,7 +93,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
                   const SizedBox(height: 20),
                   Text(
                     'Terima kasih sudah menjadi relawan!',
-                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                   ),
                 ],
               ),
@@ -184,7 +184,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: warnaAksen.withOpacity(0.3), width: 1),
+        side: BorderSide(color: warnaAksen.withValues(alpha: 0.3), width: 1),
       ),
       elevation: 0,
       color: Colors.white,
@@ -195,7 +195,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: warnaAksen.withOpacity(0.1),
+                color: warnaAksen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(Icons.class_, color: warnaAksen),
@@ -328,7 +328,7 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

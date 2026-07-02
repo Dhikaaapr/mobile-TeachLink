@@ -106,7 +106,7 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: Colors.white.withOpacity(0.3),
+                    backgroundColor: Colors.white.withValues(alpha: 0.3),
                     child: const Icon(Icons.person, size: 32, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
@@ -133,7 +133,7 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20)),
                     child: Row(children: [
                       const Icon(Icons.star, size: 14, color: Colors.amber),
@@ -153,7 +153,7 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
 
             // Mata Pelajaran
             DropdownButtonFormField<String>(
-              value: _selectedMapel,
+              initialValue: _selectedMapel,
               decoration: InputDecoration(
                 labelText: 'Mata Pelajaran yang Dibutuhkan',
                 prefixIcon: const Icon(Icons.menu_book),
@@ -170,7 +170,7 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
 
             // Hari
             DropdownButtonFormField<String>(
-              value: _selectedHari,
+              initialValue: _selectedHari,
               decoration: InputDecoration(
                 labelText: 'Preferensi Hari Belajar',
                 prefixIcon: const Icon(Icons.calendar_today),

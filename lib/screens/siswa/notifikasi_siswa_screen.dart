@@ -72,7 +72,7 @@ class NotifikasiSiswaScreen extends StatelessWidget {
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: CircleAvatar(
-                backgroundColor: (n['color'] as Color).withOpacity(0.15),
+                backgroundColor: (n['color'] as Color).withValues(alpha: 0.15),
                 child: Icon(n['icon'] as IconData, color: n['color'] as Color, size: 22),
               ),
               title: Row(

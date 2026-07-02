@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -83,10 +84,10 @@ class AuthService {
       if (doc.exists) {
         return doc.get('role') as String?;
       }
-      print('Dokumen user tidak ditemukan di Firestore untuk uid: $uid');
+      debugPrint('Dokumen user tidak ditemukan di Firestore untuk uid: $uid');
       return null;
     } catch (e) {
-      print('Error fetching role dari Firestore: $e');
+      debugPrint('Error fetching role dari Firestore: $e');
       return null;
     }
   }

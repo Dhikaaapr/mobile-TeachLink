@@ -108,9 +108,9 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
+                color: statusColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: statusColor.withOpacity(0.4)),
+                border: Border.all(color: statusColor.withValues(alpha: 0.4)),
               ),
               child: Text(
                 statusLabel,

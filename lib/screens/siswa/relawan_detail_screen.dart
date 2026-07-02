@@ -35,7 +35,7 @@ class RelawanDetailScreen extends StatelessWidget {
                     const SizedBox(height: 40),
                     CircleAvatar(
                       radius: 45,
-                      backgroundColor: Colors.white.withOpacity(0.3),
+                      backgroundColor: Colors.white.withValues(alpha: 0.3),
                       child: const Icon(Icons.person, size: 50, color: Colors.white),
                     ),
                     const SizedBox(height: 8),

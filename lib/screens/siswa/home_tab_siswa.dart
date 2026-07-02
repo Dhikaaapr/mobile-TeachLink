@@ -48,7 +48,7 @@ class HomeTabSiswa extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: Colors.white.withOpacity(0.3),
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
                         child: const Icon(Icons.person, color: Colors.white, size: 24),
                       ),
                       const SizedBox(width: 12),
@@ -57,7 +57,7 @@ class HomeTabSiswa extends StatelessWidget {
                         children: [
                           Text(
                             'Selamat Datang,',
-                            style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                           ),
                           const Text(
                             'Budi Santoso 👋',
@@ -70,7 +70,7 @@ class HomeTabSiswa extends StatelessWidget {
                   const SizedBox(height: 20),
                   Text(
                     'Tetap semangat belajar hari ini!',
-                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                   ),
                 ],
               ),
@@ -196,7 +196,7 @@ class HomeTabSiswa extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
