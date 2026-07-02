@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'relawan_detail_screen.dart';
-import 'search_tab_siswa.dart'; // untuk dummyRelawan
+import '../../data/dummy_data.dart'; // untuk dummyRelawan
 import 'notifikasi_siswa_screen.dart';
 
 class HomeTabSiswa extends StatelessWidget {
@@ -161,25 +163,72 @@ class HomeTabSiswa extends StatelessWidget {
             // Jadwal Belajar
             const Text('Jadwal Belajar Mendatang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            ...List.generate(3, (index) {
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blue[50],
-                    child: const Icon(Icons.menu_book, color: Colors.blue),
-                  ),
-                  title: Text('Sesi Belajar #${index + 1}'),
-                  subtitle: const Text('Matematika • Besok, 14:00'),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                  onTap: () {},
-                ),
-              );
-            }),
+            _buildUpcomingSessions(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildUpcomingSessions() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Text('Silakan login ulang untuk melihat sesi.');
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('sessions')
+          .where('siswaId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'upcoming')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Gagal memuat sesi: ${snapshot.error}');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final docs = snapshot.data?.docs.toList() ?? [];
+        docs.sort((a, b) {
+          final aStart = a.data()['startAt'];
+          final bStart = b.data()['startAt'];
+          final aDate = aStart is Timestamp ? aStart.toDate() : DateTime(2100);
+          final bDate = bStart is Timestamp ? bStart.toDate() : DateTime(2100);
+          return aDate.compareTo(bDate);
+        });
+
+        if (docs.isEmpty) {
+          return const Card(
+            child: ListTile(
+              title: Text('Belum ada sesi mendatang.'),
+              subtitle: Text('Sesi akan muncul setelah request Anda di-accept relawan.'),
+            ),
+          );
+        }
+
+        return Column(
+          children: docs.map((doc) {
+            final data = doc.data();
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.blue[50],
+                  child: const Icon(Icons.menu_book, color: Colors.blue),
+                ),
+                title: Text((data['mataPelajaran'] as String?) ?? 'Sesi Belajar'),
+                subtitle: Text(_formatWaktu(data['startAt'], data['endAt'])),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                onTap: () {},
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -213,5 +262,19 @@ class HomeTabSiswa extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatWaktu(dynamic startAt, dynamic endAt) {
+    if (startAt is! Timestamp || endAt is! Timestamp) return '-';
+    final start = startAt.toDate();
+    final end = endAt.toDate();
+    return '${_hariIndonesia(start.weekday)}, ${_dua(start.day)}/${_dua(start.month)} ${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
+  }
+
+  String _dua(int value) => value.toString().padLeft(2, '0');
+
+  String _hariIndonesia(int weekday) {
+    const hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    return hari[(weekday - 1).clamp(0, 6)];
   }
 }

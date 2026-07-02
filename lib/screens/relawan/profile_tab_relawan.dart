@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
+import 'draft_jadwal_relawan.dart';
 import 'riwayat_mengajar_screen.dart';
 
 class ProfileTabRelawan extends StatefulWidget {
@@ -116,8 +117,16 @@ class _ProfileTabRelawanState extends State<ProfileTabRelawan> {
             _buildProfileMenu(icon: Icons.history, title: 'Riwayat Mengajar', onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const RiwayatMengajarScreen()));
             }),
-            _buildProfileMenu(icon: Icons.settings_outlined, title: 'Pengaturan', onTap: () {}),
-            _buildProfileMenu(icon: Icons.help_outline, title: 'Pusat Bantuan', onTap: () {}),
+            _buildProfileMenu(
+              icon: Icons.settings_outlined,
+              title: 'Draft Jadwal',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DraftJadwalScreen()),
+                );
+              },
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {

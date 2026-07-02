@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'request_belajar_screen.dart';
-import 'search_tab_siswa.dart'; // import dummyRelawan
+import '../../data/dummy_data.dart'; // import dummyRelawan
 
 class RelawanDetailScreen extends StatelessWidget {
   final int relawanIndex;
@@ -98,15 +97,14 @@ class RelawanDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RequestBelajarScreen(relawan: data),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Silakan pilih jadwal tersedia pada menu Cari Jadwal.'),
                           ),
                         );
                       },
                       icon: const Icon(Icons.send),
-                      label: const Text('Kirim Permintaan Belajar',
+                      label: const Text('Pilih Jadwal Tersedia',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'riwayat_sesi_siswa_screen.dart';
+import 'draft_kursus_screen.dart';
 
 class ProfileTabSiswa extends StatelessWidget {
   const ProfileTabSiswa({super.key});
@@ -75,9 +77,30 @@ class ProfileTabSiswa extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildProfileMenu(icon: Icons.edit_outlined, title: 'Edit Profil', onTap: () {}),
-            _buildProfileMenu(icon: Icons.history, title: 'Riwayat Sesi Belajar', onTap: () {}),
-            _buildProfileMenu(icon: Icons.settings_outlined, title: 'Pengaturan', onTap: () {}),
-            _buildProfileMenu(icon: Icons.help_outline, title: 'Pusat Bantuan', onTap: () {}),
+
+            _buildProfileMenu(
+              icon: Icons.history,
+              title: 'Riwayat Sesi Belajar',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiwayatSesiSiswaScreen()),
+                );
+              },
+            ),
+
+            _buildProfileMenu(
+              icon: Icons.menu_book_outlined,
+              title: 'Draft Kursus',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DraftKursusScreen(),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {

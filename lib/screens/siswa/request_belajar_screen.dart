@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RequestBelajarScreen extends StatefulWidget {
-  final Map<String, dynamic> relawan;
-  const RequestBelajarScreen({super.key, required this.relawan});
+  final String scheduleId;
+  final Map<String, dynamic> scheduleData;
+
+  const RequestBelajarScreen({
+    super.key,
+    required this.scheduleId,
+    required this.scheduleData,
+  });
 
   @override
   State<RequestBelajarScreen> createState() => _RequestBelajarScreenState();
 }
 
 class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
-  String? _selectedMapel;
-  String? _selectedHari;
+  bool _isSubmitting = false;
   final _catatanController = TextEditingController();
-
-  final List<String> _mapelList = [
-    'Matematika', 'IPA / Sains', 'Bahasa Inggris', 'Bahasa Indonesia',
-    'Fisika', 'Kimia', 'Sejarah', 'Pemrograman'
-  ];
-  final List<String> _hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
   @override
   void dispose() {
@@ -25,55 +26,136 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
     super.dispose();
   }
 
-  void _kirimPermintaan() {
-    if (_selectedMapel == null || _selectedHari == null) {
+  Future<void> _kirimPermintaan() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Harap pilih mata pelajaran dan hari terlebih dahulu'),
+          content: Text('Silakan login sebagai siswa terlebih dahulu'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final relawanId = (widget.scheduleData['ownerRelawanId'] as String?)?.trim();
+    if (relawanId == null || relawanId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Data jadwal tidak valid: relawan tidak ditemukan'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (relawanId == user.uid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Anda tidak bisa mengajukan request ke jadwal milik sendiri'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 64),
-            const SizedBox(height: 16),
-            const Text('Permintaan Terkirim!',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(
-              'Permintaan belajar Anda kepada ${widget.relawan['nama']} telah dikirim. Tunggu konfirmasi dari relawan.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black54),
+
+    final requestId = '${widget.scheduleId}_${user.uid}';
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final siswaDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final siswaName = (siswaDoc.data()?['nama'] as String?)?.trim();
+
+      final requestRef = FirebaseFirestore.instance.collection('requests').doc(requestId);
+      final existing = await requestRef.get();
+
+      if (existing.exists) {
+        final oldStatus = (existing.data()?['status'] as String?) ?? 'pending';
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Anda sudah pernah mengirim request untuk jadwal ini (status: $oldStatus).'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      await requestRef.set({
+        'scheduleId': widget.scheduleId,
+        'relawanId': relawanId,
+        'relawanName': widget.scheduleData['ownerRelawanName'] ?? 'Relawan',
+        'siswaId': user.uid,
+        'siswaName': siswaName?.isNotEmpty == true ? siswaName : 'Siswa',
+        'mapel': widget.scheduleData['mataPelajaran'],
+        'startAt': widget.scheduleData['startAt'],
+        'endAt': widget.scheduleData['endAt'],
+        'mode': widget.scheduleData['mode'],
+        'detail': widget.scheduleData['detail'],
+        'status': 'pending',
+        'catatanSiswa': _catatanController.text.trim(),
+        'requestedAt': FieldValue.serverTimestamp(),
+        'decidedAt': null,
+        'decidedBy': null,
+      });
+
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 64),
+              const SizedBox(height: 16),
+              const Text('Permintaan Terkirim!',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text(
+                'Request belajar Anda sudah dikirim ke relawan pemilik jadwal.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+          actions: [
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Tutup'),
+              ),
             ),
           ],
         ),
-        actions: [
-          Center(
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // close dialog
-                Navigator.of(context).pop(); // back to detail
-                Navigator.of(context).pop(); // back to search
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Kembali ke Beranda'),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengirim request: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -114,34 +196,21 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(widget.relawan['nama'],
+                        Text(widget.scheduleData['ownerRelawanName'] ?? 'Relawan',
                             style: const TextStyle(
                                 color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 2),
-                        Text(widget.relawan['keahlian'],
+                        Text(widget.scheduleData['mataPelajaran'] ?? '-',
                             style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         const SizedBox(height: 2),
                         Row(children: [
-                          const Icon(Icons.location_on, size: 12, color: Colors.white70),
+                          const Icon(Icons.schedule, size: 12, color: Colors.white70),
                           const SizedBox(width: 4),
-                          Text(widget.relawan['lokasi'],
+                          Text(_formatWaktuRingkas(widget.scheduleData['startAt']),
                               style: const TextStyle(color: Colors.white70, fontSize: 12)),
                         ]),
                       ],
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20)),
-                    child: Row(children: [
-                      const Icon(Icons.star, size: 14, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(widget.relawan['rating'],
-                          style:
-                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ]),
                   ),
                 ],
               ),
@@ -151,37 +220,29 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
             const Text('Detail Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
-            // Mata Pelajaran
-            DropdownButtonFormField<String>(
-              initialValue: _selectedMapel,
+            TextFormField(
+              initialValue: widget.scheduleData['mataPelajaran']?.toString() ?? '-',
+              enabled: false,
               decoration: InputDecoration(
-                labelText: 'Mata Pelajaran yang Dibutuhkan',
+                labelText: 'Mata Pelajaran',
                 prefixIcon: const Icon(Icons.menu_book),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
-              items: _mapelList
-                  .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                  .toList(),
-              onChanged: (val) => setState(() => _selectedMapel = val),
             ),
             const SizedBox(height: 16),
 
-            // Hari
-            DropdownButtonFormField<String>(
-              initialValue: _selectedHari,
+            TextFormField(
+              initialValue: _formatWaktuLengkap(widget.scheduleData['startAt'], widget.scheduleData['endAt']),
+              enabled: false,
               decoration: InputDecoration(
-                labelText: 'Preferensi Hari Belajar',
+                labelText: 'Jadwal',
                 prefixIcon: const Icon(Icons.calendar_today),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
                 fillColor: Colors.white,
               ),
-              items: _hariList
-                  .map((h) => DropdownMenuItem(value: h, child: Text(h)))
-                  .toList(),
-              onChanged: (val) => setState(() => _selectedHari = val),
             ),
             const SizedBox(height: 16),
 
@@ -202,10 +263,18 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
             const SizedBox(height: 32),
 
             ElevatedButton.icon(
-              onPressed: _kirimPermintaan,
-              icon: const Icon(Icons.send),
-              label: const Text('Kirim Permintaan',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              onPressed: _isSubmitting ? null : _kirimPermintaan,
+              icon: _isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white),
+                    )
+                  : const Icon(Icons.send),
+              label: Text(
+                _isSubmitting ? 'Mengirim...' : 'Kirim Permintaan',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -218,5 +287,25 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
         ),
       ),
     );
+  }
+
+  String _formatWaktuRingkas(dynamic timestamp) {
+    if (timestamp is! Timestamp) return '-';
+    final date = timestamp.toDate();
+    return '${_dua(date.day)}/${_dua(date.month)}/${date.year} ${_dua(date.hour)}:${_dua(date.minute)}';
+  }
+
+  String _formatWaktuLengkap(dynamic startAt, dynamic endAt) {
+    if (startAt is! Timestamp || endAt is! Timestamp) return '-';
+    final start = startAt.toDate();
+    final end = endAt.toDate();
+    return '${_hariIndonesia(start.weekday)}, ${start.day}/${start.month}/${start.year} ${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
+  }
+
+  String _dua(int value) => value.toString().padLeft(2, '0');
+
+  String _hariIndonesia(int weekday) {
+    const hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+    return hari[(weekday - 1).clamp(0, 6)];
   }
 }

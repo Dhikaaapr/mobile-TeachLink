@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
-class RiwayatMengajarScreen extends StatelessWidget {
-  const RiwayatMengajarScreen({super.key});
+class RiwayatSesiSiswaScreen extends StatelessWidget {
+  const RiwayatSesiSiswaScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Riwayat Mengajar'),
+        title: const Text('Riwayat Sesi Belajar'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -28,12 +28,13 @@ class RiwayatMengajarScreen extends StatelessWidget {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('sessions')
-          .where('relawanId', isEqualTo: user.uid)
+          .where('siswaId', isEqualTo: user.uid)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(child: Text('Gagal memuat riwayat: ${snapshot.error}'));
         }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -53,11 +54,11 @@ class RiwayatMengajarScreen extends StatelessWidget {
         });
 
         if (docs.isEmpty) {
-          return const Center(child: Text('Belum ada riwayat mengajar.'));
+          return const Center(child: Text('Belum ada riwayat sesi.'));
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           itemBuilder: (context, index) {
             final data = docs[index].data();
@@ -66,40 +67,19 @@ class RiwayatMengajarScreen extends StatelessWidget {
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-              color: Colors.white,
               child: ListTile(
-                contentPadding: const EdgeInsets.all(16),
                 leading: CircleAvatar(
-                  backgroundColor: isCompleted ? Colors.green[50] : Colors.orange[50],
+                  backgroundColor: isCompleted ? Colors.blue[50] : Colors.orange[50],
                   child: Icon(
                     isCompleted ? Icons.check_circle : Icons.cancel,
-                    color: isCompleted ? Colors.green : Colors.orange,
+                    color: isCompleted ? Colors.blue : Colors.orange,
                   ),
                 ),
-                title: Text(
-                  (data['mataPelajaran'] as String?) ?? '-',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                title: Text((data['mataPelajaran'] as String?) ?? '-'),
+                subtitle: Text(
+                  '${_formatWaktu(data['startAt'], data['endAt'])}\nRelawan: ${(data['relawanName'] as String?) ?? '-'}',
                 ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text('Siswa: ${(data['siswaName'] as String?) ?? '-'}'),
-                    const SizedBox(height: 4),
-                    Text(
-                      isCompleted
-                          ? 'Selesai pada: ${_formatTanggal(data['completedAt'] ?? data['startAt'])}'
-                          : 'Dibatalkan',
-                      style: TextStyle(
-                        color: isCompleted ? Colors.green : Colors.orange,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                isThreeLine: true,
               ),
             );
           },
@@ -108,10 +88,11 @@ class RiwayatMengajarScreen extends StatelessWidget {
     );
   }
 
-  String _formatTanggal(dynamic timestamp) {
-    if (timestamp is! Timestamp) return '-';
-    final dt = timestamp.toDate();
-    return '${_dua(dt.day)}/${_dua(dt.month)}/${dt.year} ${_dua(dt.hour)}:${_dua(dt.minute)}';
+  String _formatWaktu(dynamic startAt, dynamic endAt) {
+    if (startAt is! Timestamp || endAt is! Timestamp) return '-';
+    final start = startAt.toDate();
+    final end = endAt.toDate();
+    return '${_dua(start.day)}/${_dua(start.month)}/${start.year} ${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
   }
 
   String _dua(int value) => value.toString().padLeft(2, '0');

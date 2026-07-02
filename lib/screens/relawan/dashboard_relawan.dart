@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_tab_relawan.dart';
-import 'search_tab_relawan.dart';
+import 'jadwal_relawan_tab.dart';
+import 'permintaan_relawan_tab.dart';
 import 'profile_tab_relawan.dart';
 
 class DashboardRelawan extends StatefulWidget {
@@ -15,7 +16,8 @@ class _DashboardRelawanState extends State<DashboardRelawan> {
 
   final List<Widget> _tabs = const [
     HomeTabRelawan(),
-    SearchTabRelawan(),
+    JadwalRelawanTab(),        // Jadwal
+    PermintaanRelawanTab(),    // Permintaan
     ProfileTabRelawan(),
   ];
 
@@ -32,12 +34,17 @@ class _DashboardRelawanState extends State<DashboardRelawan> {
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: 'Beranda',
+          ),
+         BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_month_outlined),
+            activeIcon: Icon(Icons.calendar_month),
+            label: 'Jadwal',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search_outlined),
-            activeIcon: Icon(Icons.search),
-            label: 'Cari Siswa',
+            icon: Icon(Icons.mail_outline),
+            activeIcon: Icon(Icons.mail),
+            label: 'Permintaan',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

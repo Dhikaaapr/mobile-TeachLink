@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_tab_siswa.dart';
 import 'search_tab_siswa.dart';
+import 'jadwal_siswa_tab.dart';
 import 'profile_tab_siswa.dart';
 
 class DashboardSiswa extends StatefulWidget {
@@ -15,6 +16,7 @@ class _DashboardSiswaState extends State<DashboardSiswa> {
 
   final List<Widget> _tabs = const [
     HomeTabSiswa(),
+    JadwalSiswaTab(),
     SearchTabSiswa(),
     ProfileTabSiswa(),
   ];
@@ -35,9 +37,14 @@ class _DashboardSiswaState extends State<DashboardSiswa> {
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today_outlined),
+            activeIcon: Icon(Icons.calendar_today),
+            label: 'Jadwal',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.search_outlined),
             activeIcon: Icon(Icons.search),
-            label: 'Cari Relawan',
+            label: 'Cari',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
