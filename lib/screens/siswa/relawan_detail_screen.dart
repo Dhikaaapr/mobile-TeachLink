@@ -1,125 +1,160 @@
 import 'package:flutter/material.dart';
-import '../../data/dummy_data.dart'; // import dummyRelawan
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'pilih_jadwal_relawan_screen.dart';
 
 class RelawanDetailScreen extends StatelessWidget {
-  final int relawanIndex;
-  const RelawanDetailScreen({super.key, required this.relawanIndex});
+  final String relawanId;
+  const RelawanDetailScreen({super.key, required this.relawanId});
 
   @override
   Widget build(BuildContext context) {
-    final data = dummyRelawan[relawanIndex % dummyRelawan.length];
-    final List<Map<String, dynamic>> ulasan = List<Map<String, dynamic>>.from(data['ulasan']);
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    CircleAvatar(
-                      radius: 45,
-                      backgroundColor: Colors.white.withValues(alpha: 0.3),
-                      child: const Icon(Icons.person, size: 50, color: Colors.white),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      data['nama'],
-                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stats Row
-                  Row(
-                    children: [
-                      Expanded(child: _buildStatChip(Icons.star, data['rating'], Colors.amber)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildStatChip(Icons.people, '${data['totalSiswa']} Siswa', Colors.blue)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildStatChip(Icons.timer, '${data['jamSosial']}j', Colors.green)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('users').doc(relawanId).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Gagal memuat data: ${snapshot.error}'));
+          }
 
-                  // Detail Card
-                  _buildSectionCard(
-                    title: 'Tentang Relawan',
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('Data relawan tidak ditemukan'));
+          }
+
+          final data = snapshot.data!.data()!;
+          final nama = (data['nama'] as String?)?.trim() ?? 'Relawan';
+          final keahlian = (data['keahlian'] as String?)?.trim() ?? '-';
+          final lokasi = (data['lokasi'] as String?)?.trim() ?? '-';
+          final bio = (data['bio'] as String?)?.trim() ?? 'Belum ada informasi bio';
+          final pekerjaan = (data['pekerjaan'] as String?)?.trim() ?? '-';
+
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 200,
+                pinned: true,
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(data['bio'], style: const TextStyle(color: Colors.black87, height: 1.5)),
-                        const SizedBox(height: 12),
-                        _buildDetailRow(Icons.school, 'Pendidikan', data['pendidikan']),
+                        const SizedBox(height: 40),
+                        CircleAvatar(
+                          radius: 45,
+                          backgroundColor: Colors.white.withValues(alpha: 0.3),
+                          child: const Icon(Icons.person, size: 50, color: Colors.white),
+                        ),
                         const SizedBox(height: 8),
-                        _buildDetailRow(Icons.workspace_premium, 'Keahlian', data['keahlian']),
-                        const SizedBox(height: 8),
-                        _buildDetailRow(Icons.location_on, 'Lokasi', data['lokasi']),
+                        Text(
+                          nama,
+                          style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Ulasan
-                  _buildSectionCard(
-                    title: '⭐ Ulasan Siswa',
-                    child: Column(
-                      children: ulasan.map((u) => _buildUlasanItem(u)).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Tombol Request
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Silakan pilih jadwal tersedia pada menu Cari Jadwal.'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.send),
-                      label: const Text('Pilih Jadwal Tersedia',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('sessions')
+                            .where('relawanId', isEqualTo: relawanId)
+                            .snapshots(),
+                        builder: (context, sessionSnapshot) {
+                          int totalSiswa = 0;
+
+                          if (sessionSnapshot.hasData) {
+                            final sessions = sessionSnapshot.data!.docs;
+                            final uniqueSiswa = <String>{};
+
+                            for (final doc in sessions) {
+                              final sessionData = doc.data();
+                              final siswaId = (sessionData['siswaId'] as String?)?.trim();
+                              if (siswaId != null && siswaId.isNotEmpty) {
+                                uniqueSiswa.add(siswaId);
+                              }
+                            }
+
+                            totalSiswa = uniqueSiswa.length;
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(child: _buildStatChip(Icons.people, '$totalSiswa Siswa diajar', Colors.blue)),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      _buildSectionCard(
+                        title: 'Tentang Relawan',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(bio, style: const TextStyle(color: Colors.black87, height: 1.5)),
+                            const SizedBox(height: 12),
+                            _buildDetailRow(Icons.work, 'Pekerjaan', pekerjaan),
+                            const SizedBox(height: 8),
+                            _buildDetailRow(Icons.workspace_premium, 'Keahlian', keahlian),
+                            const SizedBox(height: 8),
+                            _buildDetailRow(Icons.location_on, 'Lokasi', lokasi),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PilihJadwalRelawanScreen(
+                                  relawanId: relawanId,
+                                  relawanName: nama,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.send),
+                          label: const Text('Pilih Jadwal Tersedia',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -170,40 +205,6 @@ class RelawanDetailScreen extends StatelessWidget {
         Text('$label: ', style: const TextStyle(color: Colors.black54)),
         Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
       ],
-    );
-  }
-
-  Widget _buildUlasanItem(Map<String, dynamic> ulasan) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: Colors.blue[100],
-            child: const Icon(Icons.person, size: 20, color: Colors.blue),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(ulasan['nama'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    ...List.generate(
-                        ulasan['bintang'], (_) => const Icon(Icons.star, size: 14, color: Colors.amber)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(ulasan['komentar'], style: const TextStyle(color: Colors.black54)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

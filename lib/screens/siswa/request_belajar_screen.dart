@@ -217,6 +217,57 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
             ),
             const SizedBox(height: 24),
 
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(widget.scheduleData['ownerRelawanId'])
+                  .snapshots(),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                  return const SizedBox.shrink();
+                }
+
+                final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+                final bio = userData['bio'] ?? 'Belum ada informasi bio';
+                final pekerjaan = userData['pekerjaan'] ?? '-';
+                final keahlian = userData['keahlian'] ?? '-';
+                final lokasi = userData['lokasi'] ?? '-';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Tentang Relawan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[300]!),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bio,
+                            style: const TextStyle(color: Colors.black87, height: 1.5),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoRow(Icons.work, 'Pekerjaan', pekerjaan),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(Icons.workspace_premium, 'Keahlian', keahlian),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(Icons.location_on, 'Lokasi', lokasi),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
+            ),
+
             const Text('Detail Permintaan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
 
@@ -307,5 +358,16 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
   String _hariIndonesia(int weekday) {
     const hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
     return hari[(weekday - 1).clamp(0, 6)];
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.blue),
+        const SizedBox(width: 8),
+        Text('$label: ', style: const TextStyle(color: Colors.black54)),
+        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+      ],
+    );
   }
 }

@@ -40,9 +40,15 @@ class RiwayatSesiSiswaScreen extends StatelessWidget {
         }
 
         final allDocs = snapshot.data?.docs ?? [];
+        final now = DateTime.now();
         final docs = allDocs.where((doc) {
-          final status = (doc.data()['status'] as String?) ?? 'upcoming';
-          return status == 'completed' || status == 'cancelled';
+          final data = doc.data();
+          final status = (data['status'] as String?) ?? 'upcoming';
+          final endAt = data['endAt'];
+          
+          final hasEnded = endAt is Timestamp && endAt.toDate().isBefore(now);
+          
+          return status == 'completed' || status == 'cancelled' || hasEnded;
         }).toList();
 
         docs.sort((a, b) {

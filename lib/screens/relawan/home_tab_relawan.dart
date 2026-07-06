@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'notifikasi_relawan_screen.dart';
+import 'permintaan_relawan_tab.dart';
 
 class HomeTabRelawan extends StatefulWidget {
   const HomeTabRelawan({super.key});
@@ -100,72 +101,185 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
             ),
             const SizedBox(height: 20),
 
-            // Stats
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard(
-                    title: 'Total Siswa',
-                    value: '12',
-                    icon: Icons.people,
-                    color: Colors.blue,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('sessions')
+                        .where('relawanId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int uniqueStudents = 0;
+                      if (snapshot.hasData) {
+                        final siswaIds = <String>{};
+                        for (var doc in snapshot.data!.docs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final siswaId = data['siswaId'];
+                          if (siswaId != null) {
+                            siswaIds.add(siswaId);
+                          }
+                        }
+                        uniqueStudents = siswaIds.length;
+                      }
+                      return _buildStatCard(
+                        title: 'Total Siswa',
+                        value: '$uniqueStudents',
+                        icon: Icons.people,
+                        color: Colors.blue,
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildStatCard(
-                    title: 'Jam Sosial',
-                    value: '48j',
-                    icon: Icons.timer,
-                    color: Colors.green,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('requests')
+                        .where('relawanId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final requestCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                      return _buildStatCard(
+                        title: 'Total Request',
+                        value: '$requestCount',
+                        icon: Icons.timer,
+                        color: Colors.green,
+                      );
+                    },
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
 
-            // Sesi Hari Ini
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Sesi Hari Ini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
-              ],
-            ),
-            _buildSesiCard(
-              mapel: 'Matematika',
-              waktu: '14:00 - 15:30',
-              siswa: 'Budi (SMP Kelas 8)',
-              lokasi: 'Online (Zoom)',
-              warnaAksen: Colors.blue,
-            ),
-            _buildSesiCard(
-              mapel: 'Bahasa Inggris',
-              waktu: '16:00 - 17:00',
-              siswa: 'Siti (SD Kelas 5)',
-              lokasi: 'Offline (Perpustakaan Daerah)',
-              warnaAksen: Colors.orange,
+            const Text('Sesi Hari Ini', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sessions')
+                  .where('relawanId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('status', isEqualTo: 'upcoming')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+
+                final now = DateTime.now();
+                final currentWeekday = now.weekday;
+                
+                final todaySessions = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final startAt = data['startAt'];
+                  if (startAt is! Timestamp) return false;
+                  
+                  final startDate = startAt.toDate();
+                  if (startDate.isBefore(now)) return false;
+                  if (startDate.weekday != currentWeekday) return false;
+                  
+                  return true;
+                }).toList();
+
+                todaySessions.sort((a, b) {
+                  final aStart = (a.data() as Map<String, dynamic>)['startAt'] as Timestamp;
+                  final bStart = (b.data() as Map<String, dynamic>)['startAt'] as Timestamp;
+                  return aStart.toDate().compareTo(bStart.toDate());
+                });
+
+                final limitedSessions = todaySessions.take(2).toList();
+
+                if (limitedSessions.isEmpty) {
+                  return const Card(
+                    margin: EdgeInsets.only(bottom: 12),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Text('Tidak ada sesi hari ini', style: TextStyle(color: Colors.black54)),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: limitedSessions.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final startAt = data['startAt'] as Timestamp?;
+                    final endAt = data['endAt'] as Timestamp?;
+                    
+                    String waktu = '-';
+                    if (startAt != null && endAt != null) {
+                      final start = startAt.toDate();
+                      final end = endAt.toDate();
+                      waktu = '${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
+                    }
+
+                    return _buildSesiCard(
+                      mapel: data['mataPelajaran'] ?? '-',
+                      waktu: waktu,
+                      siswa: data['siswaName'] ?? '-',
+                      lokasi: data['mode'] ?? '-',
+                      warnaAksen: Colors.blue,
+                    );
+                  }).toList(),
+                );
+              },
             ),
             
             const SizedBox(height: 20),
 
-            // Request Terbaru
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Request Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () {}, child: const Text('Lihat Semua')),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PermintaanRelawanTab()),
+                    );
+                  },
+                  child: const Text('Lihat Semua'),
+                ),
               ],
             ),
-            _buildRequestCard(
-              namaSiswa: 'Andi (SMA Kelas 10)',
-              mapel: 'Fisika',
-              pesan: 'Mohon bantuannya kak untuk materi Hukum Newton, saya agak kesulitan.',
-            ),
-            _buildRequestCard(
-              namaSiswa: 'Jojo (SMK Kelas 11)',
-              mapel: 'Dasar Pemrograman',
-              pesan: 'Kak, saya butuh bimbingan tentang looping di Python.',
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('requests')
+                  .where('relawanId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                  .where('status', isEqualTo: 'pending')
+                  .orderBy('requestedAt', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+
+                final limitedRequests = snapshot.data!.docs.take(2).toList();
+
+                if (limitedRequests.isEmpty) {
+                  return const Card(
+                    margin: EdgeInsets.only(bottom: 12),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(
+                        child: Text('Tidak ada request terbaru', style: TextStyle(color: Colors.black54)),
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: limitedRequests.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return _buildRequestCard(
+                      namaSiswa: data['siswaName'] ?? '-',
+                      mapel: data['mapel'] ?? '-',
+                      pesan: data['catatanSiswa'] ?? '-',
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ],
         ),
@@ -346,4 +460,6 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
       ),
     );
   }
+
+  String _dua(int value) => value.toString().padLeft(2, '0');
 }

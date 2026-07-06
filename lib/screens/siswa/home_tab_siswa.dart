@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'relawan_detail_screen.dart';
-import '../../data/dummy_data.dart'; // untuk dummyRelawan
 import 'notifikasi_siswa_screen.dart';
+import 'request_belajar_screen.dart';
+
+class _RelawanPreview {
+  final String id;
+  final String nama;
+  final String keahlian;
+  final Timestamp? createdAt;
+
+  const _RelawanPreview({
+    required this.id,
+    required this.nama,
+    required this.keahlian,
+    required this.createdAt,
+  });
+}
 
 class HomeTabSiswa extends StatelessWidget {
   const HomeTabSiswa({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -29,95 +44,217 @@ class HomeTabSiswa extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Greeting card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        child: user == null
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 48),
+                  child: Text('Silakan login ulang untuk melihat dashboard.'),
                 ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(
+                  _buildGreetingCard(user.uid),
+                  const SizedBox(height: 20),
+                  _buildStatsSection(user.uid),
+                  const SizedBox(height: 20),
+                  const Text('Relawan Rekomendasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  _buildRelawanRekomendasi(context),
+                  const SizedBox(height: 20),
+                  const Text('Jadwal Belajar Mendatang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  _buildUpcomingSessions(user.uid),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingCard(String uid) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        final nama = (snapshot.data?.data()?['nama'] as String?)?.trim();
+        final namaTampil = nama?.isNotEmpty == true ? nama! : 'Siswa';
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: Colors.white.withValues(alpha: 0.3),
+                    child: const Icon(Icons.person, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        child: const Icon(Icons.person, color: Colors.white, size: 24),
+                      Text(
+                        'Selamat Datang,',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Selamat Datang,',
-                            style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13),
-                          ),
-                          const Text(
-                            'Budi Santoso 👋',
-                            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      Text(
+                        '$namaTampil 👋',
+                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Tetap semangat belajar hari ini!',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
-                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
+              Text(
+                'Tetap semangat belajar hari ini!',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-            // Stats
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    title: 'Total Sesi',
-                    value: '5',
-                    icon: Icons.menu_book,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    title: 'Jam Belajar',
-                    value: '12j',
+  Widget _buildStatsSection(String uid) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance.collection('sessions').where('siswaId', isEqualTo: uid).snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? [];
+        final assignedSessions = docs.where((doc) {
+          final data = doc.data();
+          final relawanId = (data['relawanId'] as String?)?.trim() ?? '';
+          return relawanId.isNotEmpty;
+        }).toList();
+
+        final totalSesi = assignedSessions.length;
+
+        return Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                title: 'Total Sesi',
+                value: '$totalSesi',
+                icon: Icons.menu_book,
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('schedules')
+                    .where('publishState', isEqualTo: 'published')
+                    .where('bookingState', isEqualTo: 'open')
+                    .snapshots(),
+                builder: (context, scheduleSnapshot) {
+                  int availableCount = 0;
+                  if (scheduleSnapshot.hasData) {
+                    final now = DateTime.now();
+                    availableCount = scheduleSnapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      final startAt = data['startAt'];
+                      if (startAt is! Timestamp) return false;
+                      return startAt.toDate().isAfter(now);
+                    }).length;
+                  }
+                  return _buildStatCard(
+                    title: 'Jadwal Tersedia',
+                    value: '$availableCount',
                     icon: Icons.timer,
                     color: Colors.green,
-                  ),
-                ),
-              ],
+                  );
+                },
+              ),
             ),
-            const SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
 
-            // Relawan Rekomendasi
-            const Text('Relawan Rekomendasi', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            SizedBox(
+  Widget _buildRelawanRekomendasi(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('schedules')
+          .where('publishState', isEqualTo: 'published')
+          .where('bookingState', isEqualTo: 'open')
+          .snapshots(),
+      builder: (context, scheduleSnapshot) {
+        if (scheduleSnapshot.hasError) {
+          return Text('Gagal memuat relawan: ${scheduleSnapshot.error}');
+        }
+
+        if (scheduleSnapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 140,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final now = DateTime.now();
+        final relawanIds = <String>{};
+        for (final doc in scheduleSnapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[]) {
+          final data = doc.data();
+          final startAt = data['startAt'];
+          if (startAt is! Timestamp || !startAt.toDate().isAfter(now)) {
+            continue;
+          }
+
+          final relawanId = (data['ownerRelawanId'] as String?)?.trim() ?? '';
+          if (relawanId.isNotEmpty) {
+            relawanIds.add(relawanId);
+          }
+        }
+
+        if (relawanIds.isEmpty) {
+          return const SizedBox(
+            height: 90,
+            child: Center(child: Text('Belum ada relawan tersedia saat ini.')),
+          );
+        }
+
+        return FutureBuilder<List<_RelawanPreview>>(
+          future: _loadRelawanPreviews(relawanIds.toList()),
+          builder: (context, relawanSnapshot) {
+            if (relawanSnapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 140,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (relawanSnapshot.hasError) {
+              return Text('Gagal memuat profil relawan: ${relawanSnapshot.error}');
+            }
+
+            final relawanList = relawanSnapshot.data ?? [];
+            if (relawanList.isEmpty) {
+              return const SizedBox(
+                height: 90,
+                child: Center(child: Text('Data relawan belum tersedia.')),
+              );
+            }
+
+            return SizedBox(
               height: 140,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: 3,
+                itemCount: relawanList.length,
                 itemBuilder: (context, index) {
-                  final data = dummyRelawan[index];
+                  final relawan = relawanList[index];
                   return GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RelawanDetailScreen(relawanIndex: index)),
-                    ),
+                    onTap: () => _navigateToRequestFromRecommendation(context, relawan.id, relawan.nama),
                     child: Container(
                       width: 130,
                       margin: const EdgeInsets.only(right: 12),
@@ -136,52 +273,102 @@ class HomeTabSiswa extends StatelessWidget {
                             child: const Icon(Icons.person, color: Colors.blue, size: 28),
                           ),
                           const SizedBox(height: 8),
-                          Text(data['nama'].toString().split(' ')[0],
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          const SizedBox(height: 2),
-                          Text(data['keahlian'].toString().split(',')[0],
-                              style: const TextStyle(color: Colors.black54, fontSize: 11),
-                              overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.star, size: 12, color: Colors.amber),
-                              const SizedBox(width: 2),
-                              Text(data['rating'], style: const TextStyle(fontSize: 11)),
-                            ],
+                          Text(
+                            relawan.nama.split(' ').first,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          const SizedBox(height: 2),
+                          Text(
+                            relawan.keahlian.split(',').first.trim(),
+                            style: const TextStyle(color: Colors.black54, fontSize: 11),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
                         ],
                       ),
                     ),
                   );
                 },
               ),
-            ),
-            const SizedBox(height: 20),
+            );
+          },
+        );
+      },
+    );
+  }
 
-            // Jadwal Belajar
-            const Text('Jadwal Belajar Mendatang', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            _buildUpcomingSessions(),
-          ],
+  Future<void> _navigateToRequestFromRecommendation(BuildContext context, String relawanId, String relawanName) async {
+    final schedulesQuery = await FirebaseFirestore.instance
+        .collection('schedules')
+        .where('ownerRelawanId', isEqualTo: relawanId)
+        .where('publishState', isEqualTo: 'published')
+        .where('bookingState', isEqualTo: 'open')
+        .limit(1)
+        .get();
+    
+    if (schedulesQuery.docs.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Relawan ini belum memiliki jadwal tersedia')),
+      );
+      return;
+    }
+    
+    final scheduleDoc = schedulesQuery.docs.first;
+    if (!context.mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RequestBelajarScreen(
+          scheduleId: scheduleDoc.id,
+          scheduleData: scheduleDoc.data(),
         ),
       ),
     );
   }
 
-  Widget _buildUpcomingSessions() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const Text('Silakan login ulang untuk melihat sesi.');
+  Future<List<_RelawanPreview>> _loadRelawanPreviews(List<String> relawanIds) async {
+    final futures = relawanIds.map((id) => FirebaseFirestore.instance.collection('users').doc(id).get());
+    final snapshots = await Future.wait(futures);
+
+    final result = <_RelawanPreview>[];
+
+    for (final snapshot in snapshots) {
+      if (!snapshot.exists) {
+        continue;
+      }
+
+      final data = snapshot.data();
+      if (data == null) {
+        continue;
+      }
+
+      final nama = (data['nama'] as String?)?.trim();
+      final keahlian = (data['keahlian'] as String?)?.trim();
+      result.add(
+        _RelawanPreview(
+          id: snapshot.id,
+          nama: nama?.isNotEmpty == true ? nama! : 'Relawan',
+          keahlian: keahlian?.isNotEmpty == true ? keahlian! : '-',
+          createdAt: data['createdAt'] as Timestamp?,
+        ),
+      );
     }
 
+    result.sort((a, b) {
+      final aMillis = a.createdAt?.millisecondsSinceEpoch ?? 0;
+      final bMillis = b.createdAt?.millisecondsSinceEpoch ?? 0;
+      return bMillis.compareTo(aMillis);
+    });
+
+    return result.take(5).toList();
+  }
+
+  Widget _buildUpcomingSessions(String uid) {
+
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('sessions')
-          .where('siswaId', isEqualTo: user.uid)
-          .where('status', isEqualTo: 'upcoming')
-          .snapshots(),
+      stream: FirebaseFirestore.instance.collection('sessions').where('siswaId', isEqualTo: uid).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text('Gagal memuat sesi: ${snapshot.error}');
@@ -191,7 +378,23 @@ class HomeTabSiswa extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data?.docs.toList() ?? [];
+        final now = DateTime.now();
+        final todayWeekday = now.weekday;
+        final docs = (snapshot.data?.docs.toList() ?? []).where((doc) {
+          final data = doc.data();
+          final relawanId = (data['relawanId'] as String?)?.trim() ?? '';
+          final startAt = data['startAt'];
+          final status = (data['status'] as String?)?.toLowerCase() ?? '';
+
+          if (relawanId.isEmpty || startAt is! Timestamp) {
+            return false;
+          }
+
+          final start = startAt.toDate();
+          final isAssigned = status == 'upcoming' || status == 'ongoing' || status == 'assigned' || status == 'accepted';
+          return isAssigned && start.weekday == todayWeekday;
+        }).toList();
+
         docs.sort((a, b) {
           final aStart = a.data()['startAt'];
           final bStart = b.data()['startAt'];
@@ -203,8 +406,8 @@ class HomeTabSiswa extends StatelessWidget {
         if (docs.isEmpty) {
           return const Card(
             child: ListTile(
-              title: Text('Belum ada sesi mendatang.'),
-              subtitle: Text('Sesi akan muncul setelah request Anda di-accept relawan.'),
+              title: Text('Belum ada jadwal untuk hari ini.'),
+              subtitle: Text('Jadwal akan tampil sesuai hari berjalan dan sudah memiliki relawan.'),
             ),
           );
         }

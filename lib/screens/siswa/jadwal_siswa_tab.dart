@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../common/session_edit_screen.dart';
 
 class JadwalSiswaTab extends StatelessWidget {
   const JadwalSiswaTab({super.key});
@@ -29,6 +28,7 @@ class JadwalSiswaTab extends StatelessWidget {
               stream: FirebaseFirestore.instance
                   .collection('sessions')
                   .where('siswaId', isEqualTo: user.uid)
+                  .where('status', isEqualTo: 'upcoming')
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -65,8 +65,8 @@ class JadwalSiswaTab extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
-                    return _buildJadwalCard(context, data);
+                    final doc = docs[index];
+                    return _buildJadwalCard(context, doc);
                   },
                 );
               },
@@ -74,7 +74,8 @@ class JadwalSiswaTab extends StatelessWidget {
     );
   }
 
-  Widget _buildJadwalCard(BuildContext context, Map<String, dynamic> data) {
+  Widget _buildJadwalCard(BuildContext context, QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
     final status = (data['status'] as String?) ?? 'upcoming';
     final Color statusColor = status == 'completed'
         ? Colors.grey
@@ -200,10 +201,156 @@ class JadwalSiswaTab extends StatelessWidget {
                 ),
               ),
             ],
+            if (status == 'ongoing' || status == 'accepted' || status == 'upcoming') ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => _showReviewBottomSheet(context, doc),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Selesai & Beri Ulasan'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     ),
+    );
+  }
+
+  void _showReviewBottomSheet(BuildContext context, QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    int rating = 5;
+    final komentarController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Sesi Selesai',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Bagaimana pengalaman belajar kamu? Berikan ulasan untuk relawan.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 36,
+                        ),
+                        onPressed: () {
+                          setModalState(() {
+                            rating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: komentarController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: 'Tulis ulasanmu di sini (opsional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            setModalState(() => isSubmitting = true);
+                            try {
+                              final user = FirebaseAuth.instance.currentUser!;
+                              final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+                              final namaSiswa = (userDoc.data()?['nama'] as String?)?.trim() ?? 'Siswa';
+                              final data = doc.data();
+
+                              await FirebaseFirestore.instance.collection('sessions').doc(doc.id).update({
+                                'status': 'completed',
+                                'isReviewed': true,
+                              });
+
+                              await FirebaseFirestore.instance.collection('reviews').add({
+                                'relawanId': data['relawanId'],
+                                'siswaId': user.uid,
+                                'namaSiswa': namaSiswa,
+                                'rating': rating,
+                                'komentar': komentarController.text.trim(),
+                                'createdAt': FieldValue.serverTimestamp(),
+                              });
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Terima kasih atas ulasanmu!')),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Terjadi kesalahan: $e')),
+                                );
+                              }
+                            } finally {
+                              setModalState(() => isSubmitting = false);
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('Kirim Ulasan', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
