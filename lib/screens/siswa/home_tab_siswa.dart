@@ -392,7 +392,7 @@ class HomeTabSiswa extends StatelessWidget {
 
           final start = startAt.toDate();
           final isAssigned = status == 'upcoming' || status == 'ongoing' || status == 'assigned' || status == 'accepted';
-          return isAssigned && start.weekday == todayWeekday;
+          return isAssigned && start.isAfter(now.subtract(const Duration(hours: 1)));
         }).toList();
 
         docs.sort((a, b) {
@@ -406,27 +406,119 @@ class HomeTabSiswa extends StatelessWidget {
         if (docs.isEmpty) {
           return const Card(
             child: ListTile(
-              title: Text('Belum ada jadwal untuk hari ini.'),
-              subtitle: Text('Jadwal akan tampil sesuai hari berjalan dan sudah memiliki relawan.'),
+              title: Text('Belum ada jadwal mendatang.'),
+              subtitle: Text('Jadwal akan tampil di sini setelah kamu memiliki jadwal dengan relawan.'),
             ),
           );
         }
 
         return Column(
-          children: docs.map((doc) {
+          children: docs.take(3).map((doc) {
             final data = doc.data();
+            final status = (data['status'] as String?) ?? 'upcoming';
+            final Color statusColor = status == 'completed'
+                ? Colors.grey
+                : status == 'ongoing'
+                    ? Colors.blue
+                    : Colors.green;
+            
+            final String statusLabel = status == 'completed'
+                ? 'Selesai'
+                : status == 'ongoing'
+                    ? 'Sedang Berlangsung'
+                    : 'Akan Datang';
+
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blue[50],
-                  child: const Icon(Icons.menu_book, color: Colors.blue),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (data['mataPelajaran'] as String?) ?? '-',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Colors.blue.shade100,
+                          child: Icon(
+                            Icons.person,
+                            size: 18,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Relawan: ${(data['relawanName'] as String?) ?? 'Relawan'}',
+                            style: const TextStyle(fontSize: 13.5, color: Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _formatWaktu(data['startAt'], data['endAt']),
+                            style: const TextStyle(fontSize: 13, color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.laptop, size: 16, color: Colors.grey.shade600),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${data['mode'] ?? '-'}',
+                          style: const TextStyle(fontSize: 13, color: Colors.black54),
+                        ),
+                        if ((data['detail'] as String?)?.trim().isNotEmpty == true) ...[
+                          const Text(' • ', style: TextStyle(color: Colors.black54)),
+                          Expanded(
+                            child: Text(
+                              data['detail'] as String,
+                              style: const TextStyle(fontSize: 13, color: Colors.black54),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
-                title: Text((data['mataPelajaran'] as String?) ?? 'Sesi Belajar'),
-                subtitle: Text(_formatWaktu(data['startAt'], data['endAt'])),
-                trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                onTap: () {},
               ),
             );
           }).toList(),
@@ -471,7 +563,7 @@ class HomeTabSiswa extends StatelessWidget {
     if (startAt is! Timestamp || endAt is! Timestamp) return '-';
     final start = startAt.toDate();
     final end = endAt.toDate();
-    return '${_hariIndonesia(start.weekday)}, ${_dua(start.day)}/${_dua(start.month)} ${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
+    return '${_hariIndonesia(start.weekday)}, ${_dua(start.day)}/${_dua(start.month)}/${start.year} ${_dua(start.hour)}:${_dua(start.minute)} - ${_dua(end.hour)}:${_dua(end.minute)}';
   }
 
   String _dua(int value) => value.toString().padLeft(2, '0');
