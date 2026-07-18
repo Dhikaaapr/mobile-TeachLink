@@ -17,11 +17,16 @@ class SessionEditScreen extends StatefulWidget {
 
 class _SessionEditScreenState extends State<SessionEditScreen> {
   late DateTime _startDate;
-  late TimeOfDay _startTime;
-  late TimeOfDay _endTime;
+  String? _startTime;
+  String? _endTime;
   late String _mode;
   late TextEditingController _detailController;
   bool _isSaving = false;
+
+  final List<String> jamList = [
+    '07.00', '08.00', '09.00', '10.00', '11.00', '12.00', '13.00',
+    '14.00', '15.00', '16.00', '17.00', '18.00', '19.00', '20.00',
+  ];
 
   @override
   void initState() {
@@ -33,18 +38,20 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     if (startAt is Timestamp) {
       final start = startAt.toDate();
       _startDate = DateTime(start.year, start.month, start.day);
-      _startTime = TimeOfDay(hour: start.hour, minute: start.minute);
+      final startStr = '${start.hour.toString().padLeft(2, '0')}.${start.minute.toString().padLeft(2, '0')}';
+      _startTime = jamList.contains(startStr) ? startStr : jamList.first;
     } else {
       final now = DateTime.now();
       _startDate = DateTime(now.year, now.month, now.day);
-      _startTime = TimeOfDay.now();
+      _startTime = jamList.first;
     }
     
     if (endAt is Timestamp) {
       final end = endAt.toDate();
-      _endTime = TimeOfDay(hour: end.hour, minute: end.minute);
+      final endStr = '${end.hour.toString().padLeft(2, '0')}.${end.minute.toString().padLeft(2, '0')}';
+      _endTime = jamList.contains(endStr) ? endStr : jamList[1];
     } else {
-      _endTime = TimeOfDay(hour: _startTime.hour + 1, minute: _startTime.minute);
+      _endTime = jamList[1];
     }
     
     _mode = (widget.sessionData['mode'] as String?) ?? 'Online';
@@ -71,45 +78,23 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     }
   }
 
-  Future<void> _selectStartTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _startTime,
-    );
-    if (picked != null) {
-      setState(() {
-        _startTime = picked;
-      });
-    }
-  }
-
-  Future<void> _selectEndTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _endTime,
-    );
-    if (picked != null) {
-      setState(() {
-        _endTime = picked;
-      });
-    }
-  }
-
   Future<void> _saveChanges() async {
+    final startParts = _startTime!.split('.');
     final startDateTime = DateTime(
       _startDate.year,
       _startDate.month,
       _startDate.day,
-      _startTime.hour,
-      _startTime.minute,
+      int.parse(startParts[0]),
+      int.parse(startParts[1]),
     );
     
+    final endParts = _endTime!.split('.');
     final endDateTime = DateTime(
       _startDate.year,
       _startDate.month,
       _startDate.day,
-      _endTime.hour,
-      _endTime.minute,
+      int.parse(endParts[0]),
+      int.parse(endParts[1]),
     );
 
     if (endDateTime.isBefore(startDateTime)) {
@@ -334,26 +319,22 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: _selectStartTime,
-                        child: InputDecorator(
-                          decoration: _inputDecoration("Waktu Mulai", Icons.schedule_rounded)
-                              .copyWith(suffixIcon: const Icon(Icons.arrow_drop_down)),
-                          child: Text(_startTime.format(context), style: const TextStyle(color: Colors.black87)),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        decoration: _inputDecoration("Waktu Mulai", Icons.schedule_rounded),
+                        value: _startTime,
+                        items: jamList.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.black87)))).toList(),
+                        onChanged: (value) => setState(() => _startTime = value),
+                        dropdownColor: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: _selectEndTime,
-                        child: InputDecorator(
-                          decoration: _inputDecoration("Waktu Selesai", Icons.schedule_rounded)
-                              .copyWith(suffixIcon: const Icon(Icons.arrow_drop_down)),
-                          child: Text(_endTime.format(context), style: const TextStyle(color: Colors.black87)),
-                        ),
+                      child: DropdownButtonFormField<String>(
+                        decoration: _inputDecoration("Waktu Selesai", Icons.schedule_rounded),
+                        value: _endTime,
+                        items: jamList.map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.black87)))).toList(),
+                        onChanged: (value) => setState(() => _endTime = value),
+                        dropdownColor: Colors.white,
                       ),
                     ),
                   ],
@@ -375,8 +356,13 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
                 TextFormField(
                   controller: _detailController,
                   maxLines: 3,
-                  decoration: _inputDecoration("Lokasi / Detail", Icons.notes_rounded).copyWith(
-                    hintText: 'Contoh: Zoom link, alamat, dll.',
+                  decoration: _inputDecoration(
+                    _mode == 'Online' ? 'Link Google Meet' : 'Lokasi Mengajar',
+                    _mode == 'Online' ? Icons.link_rounded : Icons.location_on_rounded,
+                  ).copyWith(
+                    hintText: _mode == 'Online' 
+                        ? 'Contoh: https://meet.google.com/...' 
+                        : 'Contoh: Kosan bu noor, gang wikarta...',
                   ),
                 ),
               ],

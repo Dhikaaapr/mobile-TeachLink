@@ -362,6 +362,7 @@ class _JadwalFormScreenState extends State<JadwalFormScreen> {
                   DropdownButtonFormField<String>(
                     decoration: _inputDecoration(null, Icons.menu_book_rounded),
                     value: _mataPelajaran,
+                    hint: const Text("Pilih Mata Pelajaran"),
                     items: mataPelajaran
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
