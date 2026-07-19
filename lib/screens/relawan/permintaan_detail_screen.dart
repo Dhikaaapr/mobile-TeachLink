@@ -123,6 +123,16 @@ class _PermintaanDetailScreenState extends State<PermintaanDetailScreen> {
           'completedAt': null,
           'createdAt': FieldValue.serverTimestamp(),
         });
+
+        final notifRef = FirebaseFirestore.instance.collection('notifications').doc();
+        transaction.set(notifRef, {
+          'userId': siswaId,
+          'judul': 'Permintaan Belajar Diterima',
+          'isi': 'Relawan ${requestMap['relawanName'] ?? "Relawan"} menerima permintaan belajar Anda untuk mata pelajaran ${scheduleMap['mataPelajaran'] ?? requestMap['mapel'] ?? ""}.',
+          'category': 'success',
+          'createdAt': FieldValue.serverTimestamp(),
+          'dibaca': false,
+        });
       });
 
       // Otomatis tolak request pending lain untuk jadwal yang sama.

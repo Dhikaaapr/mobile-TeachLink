@@ -102,6 +102,16 @@ class _RequestBelajarScreenState extends State<RequestBelajarScreen> {
         'decidedBy': null,
       });
 
+      // Tambahkan notifikasi untuk relawan
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'userId': relawanId,
+        'judul': 'Permintaan Belajar Baru',
+        'isi': 'Siswa ${siswaName?.isNotEmpty == true ? siswaName : "Siswa"} mengajukan permintaan belajar untuk mata pelajaran ${widget.scheduleData['mataPelajaran'] ?? ""}.',
+        'category': 'request',
+        'createdAt': FieldValue.serverTimestamp(),
+        'dibaca': false,
+      });
+
       if (!mounted) return;
       showDialog(
         context: context,
