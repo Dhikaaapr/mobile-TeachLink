@@ -66,7 +66,17 @@ class JadwalRelawanTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final docs = snapshot.data?.docs.toList() ?? [];
+        final allDocs = snapshot.data?.docs.toList() ?? [];
+        final now = DateTime.now();
+
+        // Filter data: hanya tampilkan yang belum berakhir
+        final docs = allDocs.where((doc) {
+          final data = doc.data();
+          final endAt = data['endAt'];
+          final hasEnded = endAt is Timestamp && endAt.toDate().isBefore(now);
+          return !hasEnded;
+        }).toList();
+
         docs.sort((a, b) {
           final aStart = a.data()['startAt'];
           final bStart = b.data()['startAt'];
@@ -119,21 +129,68 @@ class JadwalRelawanTab extends StatelessWidget {
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(20),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Icon(
+                    Icons.person,
+                    size: 18,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Siswa: ${(data['siswaName'] as String?) ?? '-'}',
+                    style: const TextStyle(fontSize: 13.5, color: Colors.black87),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text('Siswa: ${(data['siswaName'] as String?) ?? '-'}'),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _formatWaktu(data['startAt'], data['endAt']),
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
-            Text(_formatWaktu(data['startAt'], data['endAt'])),
-            const SizedBox(height: 4),
-            Text('Mode: ${(data['mode'] as String?) ?? '-'}'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(Icons.laptop, size: 16, color: Colors.grey.shade600),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      text: '${data['mode'] ?? '-'}',
+                      style: const TextStyle(fontSize: 13, color: Colors.black54),
+                      children: [
+                        if ((data['detail'] as String?)?.trim().isNotEmpty == true)
+                          TextSpan(
+                            text: ' • ${data['detail']}',
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
             const SizedBox(height: 10),
             Row(
               children: [
@@ -154,19 +211,8 @@ class JadwalRelawanTab extends StatelessWidget {
                     label: const Text('Edit Jadwal'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.blue,
-                      side: const BorderSide(color: Colors.blue),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _markCompleted(context, sessionId),
-                    icon: const Icon(Icons.check_circle, color: Colors.green),
-                    label: const Text('Selesai'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.green,
-                      side: const BorderSide(color: Colors.green),
+                      side: const BorderSide(color: Colors.blue, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
@@ -178,29 +224,11 @@ class JadwalRelawanTab extends StatelessWidget {
     );
   }
 
-  Future<void> _markCompleted(BuildContext context, String sessionId) async {
-    try {
-      await FirebaseFirestore.instance.collection('sessions').doc(sessionId).update({
-        'status': 'completed',
-        'completedAt': FieldValue.serverTimestamp(),
-      });
 
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sesi dipindahkan ke Riwayat Mengajar.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Gagal memperbarui sesi: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
+  String _formatTanggal(dynamic timestamp) {
+    if (timestamp is! Timestamp) return '-';
+    final date = timestamp.toDate();
+    return '${_dua(date.day)}/${_dua(date.month)}/${date.year}';
   }
 
   String _formatWaktu(dynamic startAt, dynamic endAt) {

@@ -248,14 +248,36 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
                   .collection('requests')
                   .where('relawanId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                   .where('status', isEqualTo: 'pending')
-                  .orderBy('requestedAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 if (!snapshot.hasData) {
                   return const SizedBox.shrink();
                 }
 
-                final limitedRequests = snapshot.data!.docs.take(2).toList();
+                final allRequests = snapshot.data!.docs.toList();
+                
+                // Urutkan secara lokal untuk menghindari error index Firestore
+                allRequests.sort((a, b) {
+                  final dataA = a.data() as Map<String, dynamic>;
+                  final dataB = b.data() as Map<String, dynamic>;
+                  
+                  final timeA = dataA['requestedAt'] as Timestamp?;
+                  final timeB = dataB['requestedAt'] as Timestamp?;
+                  
+                  if (timeA == null && timeB == null) return 0;
+                  if (timeA == null) return 1;
+                  if (timeB == null) return -1;
+                  
+                  return timeB.compareTo(timeA); // Descending order
+                });
+
+                final limitedRequests = allRequests.take(1).toList();
 
                 if (limitedRequests.isEmpty) {
                   return const Card(
@@ -380,22 +402,19 @@ class _HomeTabRelawanState extends State<HomeTabRelawan> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text('Baru', style: TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
+                
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              '"$pesan"',
-              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87),
-            ),
-            const SizedBox(height: 12),
+            if (pesan.isNotEmpty && pesan != '-')
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 12),
+                child: Text(
+                  '"$pesan"',
+                  style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black87),
+                ),
+              )
+            else
+              const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
